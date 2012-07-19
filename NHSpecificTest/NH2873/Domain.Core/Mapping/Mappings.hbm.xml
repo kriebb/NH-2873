@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="NHibernate.Test"
+                   namespace="NHibernate.Test.NHSpecificTest.NH2873.Domain.Core"
+                   >
+  <class name="Person" table="Persons" lazy="true" >
+    <id name="Id" column="id" type="guid" >
+      <generator class="guid.comb"  />
+    </id>
+    <natural-id mutable="true"   >
+      <!--This one also gives trouble: if lazy = true-->
+      <!--<property name="Name" length="25" type="string" column="name" lazy="true"   />-->
+      <property name="Name" length="25" type="string" column="name" lazy="false"   />
+    </natural-id>
+    <!--To fix the tests: just uncomment this and comment the one below this => differnce: lazy=false must be true-->
+    <!--<property name="NickName" length="25" type="string" column="nickname" access="property" lazy="false" />-->
+    <property name="NickName" length="25" type="string" column="nickname" access="property" lazy="true" />
+
+    <many-to-one name="Partner" class="Person" access="property" column="partnerId" lazy="proxy" cascade="none" foreign-key="FK_Person_Partner"  />
+
+    <set name="Cats" access="nosetter.camelcase" lazy="extra" cascade="all-delete-orphan" inverse="true" >
+      <key foreign-key="master" column="masterId"  />
+      <one-to-many class="Cat" />
+    </set>
+    <set name="Toys" access="nosetter.camelcase" lazy="extra" cascade="all-delete-orphan" inverse="true"  >
+      <key foreign-key="owner" column="ownerId"   />
+      <one-to-many class="Toy"   />
+    </set>
+    <set name="Children" access="nosetter.camelcase" lazy="extra" cascade="all-delete-orphan" inverse="true" >
+      <key foreign-key="parent" column="personId"  />
+      <one-to-many class="Person"  />
+    </set>
+
+    <set name="Todos" access="nosetter.camelcase" lazy="extra" cascade="all-delete-orphan" table="Todos" >
+      <key foreign-key="person" column="todoId" />
+      <composite-element class="Todo">
+        <property column="name" name="Name" type="string" lazy="true"/>
+      </composite-element>
+    </set>
+  </class>
+  
+  <class name="Cat" table="Cats" lazy="true">
+    <id name="Id" column="id" type="guid" access="property" >
+      <generator class="guid.comb" />
+    </id>
+    <natural-id mutable="true">
+      <property name="Name" length="25" type="string" column="name"/>
+    </natural-id>
+    <many-to-one name="master" class="Person" access="field" column="masterId" lazy="proxy" cascade="none" />
+  </class>
+
+  <class name="Toy" table="Toys" lazy="true" dynamic-update="true">
+    <id name="Id" column="id" type="guid" access="property" >
+      <generator class="guid.comb" />
+    </id>
+    <natural-id mutable="true">
+      <property name="Name" length="25" type="string" column="name"/>
+    </natural-id>
+    <many-to-one name="owner" class="Child" foreign-key="FK_Toy_Owner" access="field" column="ownerId" cascade="none" not-null="true" />
+  </class>
+
+
+  <joined-subclass extends="Person" name="Child" table="Childs" lazy="true">
+    <key column="id" foreign-key="FK_Child_Person"/>
+    <many-to-one name="Parent" class="Person" access="property" column="personId" lazy="proxy" cascade="none" foreign-key="FK_Child_Parent" />
+  </joined-subclass>
+  
+</hibernate-mapping>
